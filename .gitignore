@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+data/raw/
+data/lerobot/
+outputs/
+assets/generated/
+wandb/
+.venv-hand/
+data/lerobot_archive_front_back/
+data/hands/
+data/cups/hands/
+assets/mano/
+assets/wilor/
+data/cups/raw/
+data/tracks_mediapipe/

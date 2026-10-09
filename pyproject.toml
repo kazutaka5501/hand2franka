@@ -1,0 +1,18 @@
+[project]
+name = "ego2franka"
+version = "0.1.0"
+description = "Phone videos of a hand moving an ArUco cube -> Franka demonstrations in a MuJoCo twin -> SmolVLA -> RL"
+requires-python = ">=3.12"
+dependencies = [
+    "lerobot[smolvla,dataset,training]==0.6.1",
+    "mujoco==3.15.0",
+    "mediapipe==1.0.1",
+    "opencv-contrib-python-headless",
+    "av",
+    "imageio[ffmpeg]",
+    "scipy",
+    "matplotlib",
+]
+
+[tool.setuptools]
+packages = ["e2f"]
