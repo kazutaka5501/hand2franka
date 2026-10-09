@@ -36,13 +36,16 @@ ACTION_DIM = 5
 
 
 def demonstrations(task, env, episodes):
-    """The demonstrations the base policy was trained on, replayed to get observations. -> [(steps, success)]"""
+    """The demonstrations the base policy was trained on, replayed to get observations. -> [(steps, success)]
+    `episodes`: which hand-following cube clips; None for the corrected replays of all cube clips."""
     if task == "cups":
         from .cups_retarget import replay, stack_plan
         tracks = [np.load(p) for p in sorted(glob.glob("data/cups/tracks/*.npz"))]
         return [replay(env, t, stack_plan(t)[0]) for t in tracks]
-    from .retarget import follow_plan, replay, usual_finger_angle
+    from .retarget import follow_plan, gripper_plan, replay, usual_finger_angle
     tracks = [np.load(p) for p in sorted(glob.glob("data/tracks/*.npz"))]
+    if episodes is None:
+        return [replay(env, t, gripper_plan(t, env.calib)[0]) for t in tracks]
     usual = usual_finger_angle(tracks)
     done = [r for r in (replay(env, t, follow_plan(t, env.calib, usual)[0]) for t in tracks) if r[1]]
     return [done[i] for i in episodes]
@@ -143,10 +146,19 @@ class Learner:
 
     @torch.no_grad()
     def advantages(self, buffer):
+        """How much better each buffered chunk was than what the policy usually does there.
+
+        "q" is the paper's form, Q(s, a) - V(s). Here Q turned out to follow the state closely and the
+        action hardly at all, so "td" asks the state values instead: the reward collected over the chunk
+        plus the value of where it led, minus the value of where it started."""
         f = buffer.features
-        q = self.q(self.critic, f, buffer.norm_actions[:, :CHUNK])
         v = torch.stack([self.q(self.critic, f, buffer.samples[:, k]) for k in range(buffer.samples.shape[1])]).mean(0)
-        advantage = q - v
+        if self.args.advantage == "td":
+            ret = torch.as_tensor(np.array(buffer.ret), dtype=torch.float32, device=self.device)
+            done = torch.as_tensor(buffer.done, dtype=torch.float32, device=self.device)
+            advantage = ret + GAMMA ** CHUNK * (1 - done) * v[torch.as_tensor(buffer.next, device=self.device)] - v
+        else:
+            advantage = self.q(self.critic, f, buffer.norm_actions[:, :CHUNK]) - v
         # The paper weights by exp(lambda * A) and does not give lambda. A's scale depends on how the reward is
         # scaled, so it is expressed in units of its own spread over the buffer before the temperature applies.
         return advantage / (advantage.std() + 1e-8)
@@ -201,6 +213,7 @@ def main():
     parser.add_argument("checkpoint")
     parser.add_argument("--task", choices=list(ENVS), default="cube")
     parser.add_argument("--demos", type=int, nargs="+", default=list(range(0, 30, 3)), help="which hand-following demonstrations (cube task)")
+    parser.add_argument("--corrected", action="store_true", help="the base policy was trained on the corrected replays of all cube clips")
     parser.add_argument("--out", default="outputs/train/otql")
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--rollouts", type=int, default=10, help="episodes collected per round")
@@ -209,6 +222,7 @@ def main():
     parser.add_argument("--batch", type=int, default=64)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--temperature", type=float, default=1.5, help="lambda: weight = exp(lambda * advantage in standard deviations)")
+    parser.add_argument("--advantage", choices=["q", "td"], default="q")
     parser.add_argument("--max-weight", type=float, default=20.0)
     parser.add_argument("--alpha", type=float, default=10.0, help="how strongly the OT plan keeps noise with its own observation")
     parser.add_argument("--epsilon", type=float, default=0.05, help="entropic regularisation, relative to the mean cost")
@@ -231,7 +245,7 @@ def main():
         log.flush()
 
     buffer = Buffer()
-    for steps, success in demonstrations(args.task, env, args.demos):
+    for steps, success in demonstrations(args.task, env, None if args.corrected else args.demos):
         buffer.add(steps, success, policy.config.chunk_size)
     base = success_rate(env, learner, eval_scenes)
     report(round=0, buffer=len(buffer), eval_success=base[0], eval_progress=base[1])
