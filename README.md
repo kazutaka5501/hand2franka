@@ -1,9 +1,12 @@
-# ego2franka
+# hand2franka
 
 Phone videos of a hand doing a task → the hand's motion replayed by a Franka in a MuJoCo copy of
 the same table → SmolVLA.
 
-![recorded clip next to the Franka following the hand](media/cube_video_to_robot.gif)
+![a recorded clip next to the trained policy in simulation](media/original_vs_policy.gif)
+
+*Left: one of my clips. Right: SmolVLA, trained only on data derived from those clips, doing the
+task in a simulated copy of the table, seen from where the phone stood.*
 
 I recorded 50 clips of my hand moving a cube onto a plate with a fixed iPhone. Nothing else was
 measured: the camera is calibrated from the clips themselves, the hand is tracked in 3D, and the
@@ -38,21 +41,23 @@ distance the cube is outside.
 
 ## How a clip becomes a demonstration
 
-1. **Camera from the clips** — [`e2f/calibrate.py`](e2f/calibrate.py). The phone never moves, so
+1. **Camera from the clips** — [`h2f/calibrate.py`](h2f/calibrate.py). The phone never moves, so
    the first frames of all clips show the same table marker and the cube at 50 places. One bundle
    adjustment gives focal length (1788 px), camera pose and cube size, 0.56 px reprojection error.
    Scale comes from the A4 sheet the marker is printed on.
-2. **Hand in 3D** — [`e2f/hand_mano.py`](e2f/hand_mano.py), [`e2f/perception.py`](e2f/perception.py).
+2. **Hand in 3D** — [`h2f/hand_mano.py`](h2f/hand_mano.py), [`h2f/perception.py`](h2f/perception.py).
    WiLoR regresses MANO parameters per frame; the 21 joints are registered to the image by PnP
    with the calibrated camera. Depth from one camera is the weak direction, so each clip is
    anchored where depth is known: at grasp and at release the pinch point is at the cube.
    MediaPipe is the fallback when MANO is not available; before anchoring its pinch point is
    8.0 cm off along the viewing ray at contact, MANO's 2.9 cm.
-3. **The same table in MuJoCo** — [`e2f/sim.py`](e2f/sim.py). Cube with its markers, plate, marker
+3. **The same table in MuJoCo** — [`h2f/sim.py`](h2f/sim.py). Cube with its markers, plate, marker
    sheet, and a camera with the phone's pose and field of view. ArUco detection on the rendered
    image lands within 1–2.5 px (at 1080p) of the detection on the real frame.
-4. **Hand → gripper** — [`e2f/retarget.py`](e2f/retarget.py).
-5. **Train and evaluate** — `lerobot-train`, then [`e2f/evaluate.py`](e2f/evaluate.py) rolls the
+4. **Hand → gripper** — [`h2f/retarget.py`](h2f/retarget.py).
+
+   ![recorded clip next to the Franka following the hand](media/cube_video_to_robot.gif)
+5. **Train and evaluate** — `lerobot-train`, then [`h2f/evaluate.py`](h2f/evaluate.py) rolls the
    policy out closed loop: predict a 50-step chunk, execute 10 steps, look again.
 
 ### How much of the hand's motion survives
@@ -96,8 +101,8 @@ policy sees only what the phone saw.
 ![cup stacking clip next to the replay](media/cups_video_to_robot.gif)
 
 A second recording: 10 clips of stacking a green cup into a blue one and a pink one on top.
-No markers. Code: [`e2f/cups_perception.py`](e2f/cups_perception.py),
-[`e2f/cups_sim.py`](e2f/cups_sim.py), [`e2f/cups_retarget.py`](e2f/cups_retarget.py).
+No markers. Code: [`h2f/cups_perception.py`](h2f/cups_perception.py),
+[`h2f/cups_sim.py`](h2f/cups_sim.py), [`h2f/cups_retarget.py`](h2f/cups_retarget.py).
 
 - Cups are found by colour and a truncated-cone model is fitted to each outline through the
   calibrated camera. Base diameter and height were measured with a ruler (55 and 90 mm), the rim
@@ -125,7 +130,7 @@ demonstrations the policy is not that accurate, so it tips the lower cup over.
 
 Starting point: the policy trained on ten hand-following clips (60 %).
 
-**OTQL** ([Sochopoulos et al.](https://arxiv.org/abs/2607.06262); [`e2f/otql.py`](e2f/otql.py) is
+**OTQL** ([Sochopoulos et al.](https://arxiv.org/abs/2607.06262); [`h2f/otql.py`](h2f/otql.py) is
 my reading of the paper, not the authors' code). Five rounds of ten rollouts, a critic on the
 frozen VLM's features, advantage-weighted optimal-transport flow matching on the action head.
 Success stayed where it was: 57 → 60 → 57 → 60 % on the same 30 scenes. The paper leaves the
@@ -136,7 +141,7 @@ the post-training bought.
 
 Earlier attempts, on the corrected demonstrations:
 
-- *Keep the policy's own successes and retrain* ([`e2f/improve.py`](e2f/improve.py)). No gain on
+- *Keep the policy's own successes and retrain* ([`h2f/improve.py`](h2f/improve.py)). No gain on
   wider positions (successes only occur where the policy already works) and none on speed (which
   rollout is fast is mostly chance).
 - *PPO on the flow policy, after [KinetIQ Ascend](https://thehumanoid.ai/technology/kinetiq-ascend/)*.
@@ -151,25 +156,25 @@ Earlier attempts, on the corrected demonstrations:
 uv venv --python 3.12 && uv pip install -e .
 
 # cube task; data/tracks/ is included, so the first three steps need the raw clips only if you want to redo them
-python -m e2f.calibrate                                         # data/raw/*.MOV -> data/calib.json
+python -m h2f.calibrate                                         # data/raw/*.MOV -> data/calib.json
 scripts/setup_hand_env.sh                                       # separate environment for WiLoR; MANO_RIGHT.pkl from mano.is.tue.mpg.de
-.venv-hand/bin/python -m e2f.hand_mano "data/raw/*.MOV" data/hands
-python -m e2f.perception                                        # -> data/tracks/*.npz
-python -m e2f.retarget --follow                                 # hand-following replays -> data/lerobot/demos_follow
-python -m e2f.retarget                                          # fully corrected replays -> data/lerobot/demos_phone
+.venv-hand/bin/python -m h2f.hand_mano "data/raw/*.MOV" data/hands
+python -m h2f.perception                                        # -> data/tracks/*.npz
+python -m h2f.retarget --follow                                 # hand-following replays -> data/lerobot/demos_follow
+python -m h2f.retarget                                          # fully corrected replays -> data/lerobot/demos_phone
 
 lerobot-train --policy.path=lerobot/smolvla_base \
-    --dataset.repo_id=local/ego2franka_demos --dataset.root=data/lerobot/demos_follow --dataset.video_backend=pyav \
+    --dataset.repo_id=local/hand2franka_demos --dataset.root=data/lerobot/demos_follow --dataset.video_backend=pyav \
     --rename_map='{"observation.images.phone": "observation.images.camera1"}' \
     --batch_size=64 --steps=10000 --output_dir=outputs/train/bc_follow --policy.push_to_hub=false --wandb.enable=false
 
-python -m e2f.evaluate outputs/train/bc_follow/checkpoints/last/pretrained_model --episodes 50 [--margin 0.04]
-python -m e2f.otql outputs/train/bc_follow10/checkpoints/last/pretrained_model   # after training on ten clips with --dataset.episodes
+python -m h2f.evaluate outputs/train/bc_follow/checkpoints/last/pretrained_model --episodes 50 [--margin 0.04]
+python -m h2f.otql outputs/train/bc_follow10/checkpoints/last/pretrained_model   # after training on ten clips with --dataset.episodes
 
 # cup stacking
-python -m e2f.cups_perception && python -m e2f.cups_retarget
+python -m h2f.cups_perception && python -m h2f.cups_retarget
 # train as above with --dataset.root=data/lerobot/cups_demos, then
-python -m e2f.evaluate outputs/train/cups_bc/checkpoints/last/pretrained_model --task cups
+python -m h2f.evaluate outputs/train/cups_bc/checkpoints/last/pretrained_model --task cups
 ```
 
 Trained on one RTX 5090; a 10 000-step run takes about 45 minutes and 17 GB.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Environment for e2f.hand_mano (WiLoR needs NumPy 1.x, so it cannot share the main one).
+# Environment for h2f.hand_mano (WiLoR needs NumPy 1.x, so it cannot share the main one).
 # MANO_RIGHT.pkl must be downloaded from https://mano.is.tue.mpg.de into assets/mano/ by hand.
 set -euo pipefail
 

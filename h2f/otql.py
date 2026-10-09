@@ -14,7 +14,7 @@ Starting from a policy fine-tuned on ten demonstrations, each round
 The critic sees what the policy sees: the frozen VLM's features of the phone image and the
 proprioceptive state. Nothing privileged from the simulator is used.
 
-    python -m e2f.otql outputs/train/bc_follow10/checkpoints/last/pretrained_model --task cube
+    python -m h2f.otql outputs/train/bc_follow10/checkpoints/last/pretrained_model --task cube
 """
 import argparse
 import copy
@@ -254,7 +254,7 @@ def main():
     report(round=args.rounds, flow_steps=3, eval_success=fast[0], eval_progress=fast[1])
     path = out / "pretrained_model"
     path.mkdir(exist_ok=True)
-    for f in Path(args.checkpoint).iterdir():  # same layout as a lerobot checkpoint, so e2f.evaluate loads it
+    for f in Path(args.checkpoint).iterdir():  # same layout as a lerobot checkpoint, so h2f.evaluate loads it
         if f.name != "model.safetensors":
             shutil.copy(f, path / f.name)
     policy.save_pretrained(path)

@@ -8,7 +8,7 @@ One round
 
 Selecting on speed alone would favour cubes that happen to start near the plate; the baseline removes that.
 
-    python -m e2f.improve CHECKPOINT --round 1
+    python -m h2f.improve CHECKPOINT --round 1
 """
 import argparse
 import itertools
@@ -42,7 +42,7 @@ def main():
     env = PickPlaceEnv(policy.cameras)
     out = Path("outputs/rl") / f"round{args.round}"
     out.mkdir(parents=True, exist_ok=True)
-    dataset = create_dataset(DATA_ROOT / f"round{args.round}", f"local/ego2franka_round{args.round}", policy.cameras)
+    dataset = create_dataset(DATA_ROOT / f"round{args.round}", f"local/hand2franka_round{args.round}", policy.cameras)
     cubes, steps, attempts = [], [], 0
     # training scenes use their own seeds, so they never coincide with the evaluation scenes (seed 0)
     for i, scene in enumerate(itertools.islice(env.scenes(1000 + args.round, args.margin), args.episodes)):

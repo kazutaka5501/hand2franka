@@ -1,5 +1,5 @@
 [project]
-name = "ego2franka"
+name = "hand2franka"
 version = "0.1.0"
 description = "Phone videos of a hand moving an ArUco cube -> Franka demonstrations in a MuJoCo twin -> SmolVLA -> RL"
 requires-python = ">=3.12"
@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["e2f"]
+packages = ["h2f"]

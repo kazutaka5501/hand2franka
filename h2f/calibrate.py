@@ -10,7 +10,7 @@ The cube height above the table is not observable from one view (a bigger cube
 further down the ray looks the same), so the ratio cube edge / front marker is
 measured once in the image and fixed.
 
-    python -m e2f.calibrate
+    python -m h2f.calibrate
 """
 import glob
 

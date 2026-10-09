@@ -2,12 +2,12 @@
 
 Cube and plate rest on the table, so their pixels are simply intersected with
 a horizontal plane. The hand comes as 21 joints in its own frame, from MANO
-parameters regressed by WiLoR (`e2f.hand_mano`, run first) or, without them,
+parameters regressed by WiLoR (`h2f.hand_mano`, run first) or, without them,
 from MediaPipe. PnP registers the joints to the image, which gives a 3D hand
 up to one global scale. That scale is fixed by contact: at grasp and release
 the pinch point must sit at the cube centre.
 
-    python -m e2f.perception            # all clips -> data/tracks/*.npz
+    python -m h2f.perception            # all clips -> data/tracks/*.npz
 """
 import glob
 from pathlib import Path
@@ -26,7 +26,7 @@ HAND_MODEL = "assets/hand_landmarker.task"
 THUMB_TIP, INDEX_TIP = 4, 8  # MediaPipe landmark indices
 PLATE_RIM = 0.015  # height of the paper plate rim [m]
 TRACK_DIR = Path("data/tracks")
-HAND_DIR = Path("data/hands")  # MANO joints from e2f.hand_mano; MediaPipe is used for clips without them
+HAND_DIR = Path("data/hands")  # MANO joints from h2f.hand_mano; MediaPipe is used for clips without them
 REST_FRAMES = 5  # the cube is untouched in the first frames and settled in the last ones
 
 
@@ -106,7 +106,7 @@ def find_plate(calib, bgr, table_marker_px):
 
 
 def track_video(path, calib, mano=None):
-    """Raw per-frame measurements for one clip. `mano`: output of e2f.hand_mano for this clip, used
+    """Raw per-frame measurements for one clip. `mano`: output of h2f.hand_mano for this clip, used
     instead of MediaPipe when given."""
     detector, tracker = aruco_detector(), None if mano is not None else hand_tracker()
     hand, hand_px, cube_obs = [], [], []

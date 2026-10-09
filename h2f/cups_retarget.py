@@ -10,7 +10,7 @@ The gripper takes a cup across its rim from outside (73 mm, inside the 80 mm ope
 diameter the cup hangs under the fingers like a bucket and settles upright by itself; pinching one
 side of the rim, as the hand does, let it swing round the pinch and miss the cup below.
 
-    python -m e2f.cups_retarget
+    python -m h2f.cups_retarget
 """
 import argparse
 import glob
@@ -92,7 +92,7 @@ def main():
     args = parser.parse_args()
     env = CupStackEnv()
     Path("outputs/cups/retarget").mkdir(parents=True, exist_ok=True)
-    dataset = None if args.no_dataset else create_dataset(DATASET_ROOT, "local/ego2franka_cups")
+    dataset = None if args.no_dataset else create_dataset(DATASET_ROOT, "local/hand2franka_cups")
     results = []
     for path in sorted(glob.glob("data/cups/tracks/*.npz")):
         track = np.load(path)

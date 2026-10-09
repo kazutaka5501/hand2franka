@@ -2,8 +2,8 @@
 
 Runs in its own environment because WiLoR needs NumPy 1.x:
 
-    .venv-hand/bin/python -m e2f.hand_mano "data/raw/*.MOV" data/hands
-    .venv-hand/bin/python -m e2f.hand_mano "data/cups/raw/*.mp4" data/cups/hands
+    .venv-hand/bin/python -m h2f.hand_mano "data/raw/*.MOV" data/hands
+    .venv-hand/bin/python -m h2f.hand_mano "data/cups/raw/*.mp4" data/cups/hands
 
 The MANO model itself may not be redistributed. Register at https://mano.is.tue.mpg.de, download
 "Models & Code" and put `MANO_RIGHT.pkl` in assets/mano/. The WiLoR weights are fetched from the

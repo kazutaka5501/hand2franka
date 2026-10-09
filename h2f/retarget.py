@@ -8,7 +8,7 @@ a parallel gripper:
   * heights are raised where the noisy monocular depth would drive the tool through the
     table or sideways into the cube.
 
-    python -m e2f.retarget            # replay all clips, keep the successful ones as a LeRobot dataset
+    python -m h2f.retarget            # replay all clips, keep the successful ones as a LeRobot dataset
 """
 import argparse
 import glob
@@ -187,7 +187,7 @@ def main():
     calib, env = Calib.load(), PickPlaceEnv(cameras)
     Path("outputs/retarget_follow" if args.follow else "outputs/retarget").mkdir(parents=True, exist_ok=True)
     root = DATA_ROOT / "demos_follow" if args.follow else demo_root(cameras) if not args.shifted else DATA_ROOT / f"demos_shifted{args.shifted}"
-    dataset = None if args.no_dataset else create_dataset(root, "local/ego2franka_demos", cameras)
+    dataset = None if args.no_dataset else create_dataset(root, "local/hand2franka_demos", cameras)
     paths = sorted(glob.glob("data/tracks/*.npz"))
     tracks = [np.load(p) for p in paths]
     usual = usual_finger_angle(tracks)

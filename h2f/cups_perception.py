@@ -4,7 +4,7 @@ The cups carry no markers: they are found by colour, and a tapered-cup model is 
 outline through the calibrated camera. The clips are 1024x576 (messenger-compressed); pixel
 coordinates are scaled to the 1920x1080 frame the camera model uses.
 
-    python -m e2f.cups_perception            # -> data/cups/tracks/*.npz
+    python -m h2f.cups_perception            # -> data/cups/tracks/*.npz
 """
 import glob
 from pathlib import Path

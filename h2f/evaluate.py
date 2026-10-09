@@ -3,8 +3,8 @@
 Start poses are drawn from the range the objects occupied in the videos; the same seed gives the
 same scenes, so checkpoints can be compared episode by episode.
 
-    python -m e2f.evaluate outputs/train/bc/checkpoints/last/pretrained_model --episodes 50
-    python -m e2f.evaluate outputs/train/cups_bc/checkpoints/last/pretrained_model --task cups
+    python -m h2f.evaluate outputs/train/bc/checkpoints/last/pretrained_model --episodes 50
+    python -m h2f.evaluate outputs/train/cups_bc/checkpoints/last/pretrained_model --task cups
 """
 import argparse
 import itertools
