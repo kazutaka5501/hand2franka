@@ -221,6 +221,12 @@ class PickPlaceEnv(ArmEnv):
     def progress(self):
         return int(self.cube_pos[2] > self.calib.cube / 2 + 0.01)
 
+    def privileged(self):
+        """What the simulator knows and a camera does not: where the cube is, relative to the tool and to the plate."""
+        tcp, yaw = self.tcp_pose()
+        cube = self.cube_pos
+        return np.r_[tcp, yaw, self.gripper_width, cube - tcp, cube[:2] - self.plate[:2], self.t / self.max_steps].astype(np.float32)
+
     def add_objects(self, spec):
         world, c = spec.worldbody, self.calib
         plate = world.add_body(name="plate", mocap=True)

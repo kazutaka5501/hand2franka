@@ -70,13 +70,18 @@ with 7 mm to spare, and 10 demonstrations do not make the policy that precise.
 
 ## What did not work
 
-- **RL post-training.** I tried to improve the trained policy with its own experience in
-  simulation, using OTQL ([paper](https://arxiv.org/abs/2607.06262); [`h2f/otql.py`](h2f/otql.py)
-  is my reading of it, not the authors' code). After 50 rollouts the success rate had not moved
-  (57 → 60 %, on the 10-clip policy). The critic can tell a good situation from a bad one (0.9 AUC
-  on held-out rollouts) but barely reacts to which action is taken, so the weights it gives the
-  actions say little. Keeping only the policy's own successes and retraining
-  ([`h2f/improve.py`](h2f/improve.py)) did not help either.
+- **RL post-training.** I tried to improve the 50-clip policy with its own experience in
+  simulation. Neither attempt moved the success rate beyond what repeating the evaluation moves it.
+  - *Residual RL* ([`h2f/residual.py`](h2f/residual.py)): SmolVLA stays frozen and a small network,
+    trained with TD3 on the simulator's state, adds up to 1 cm to each target. After 559 episodes:
+    86 % → 88 % on 100 new scenes.
+  - *OTQL* ([paper](https://arxiv.org/abs/2607.06262); [`h2f/otql.py`](h2f/otql.py) is my reading
+    of it, not the authors' code), which retrains the action head on the actions a learned critic
+    rates above average. After 50 rollouts: 80 % → 77 % on 30 scenes. The critic can tell a good
+    situation from a bad one (0.9 AUC on held-out rollouts) but barely reacts to which action is
+    taken, so its ratings of the actions say little.
+  - Keeping only the policy's own successes and retraining ([`h2f/improve.py`](h2f/improve.py))
+    did not help either.
 - **Cube positions outside the area of the clips.** 4 cm outside, success drops to 40 %; 8 cm
   outside, to 26 %. The policy reaches for a place it has seen.
 - **Copying the finger opening.** The distance between my fingertips changes by 1.6 cm between
@@ -102,7 +107,8 @@ lerobot-train --policy.path=lerobot/smolvla_base \
     --batch_size=64 --steps=10000 --output_dir=outputs/train/bc --policy.push_to_hub=false --wandb.enable=false
 
 python -m h2f.evaluate outputs/train/bc/checkpoints/last/pretrained_model --episodes 50
-python -m h2f.otql outputs/train/bc/checkpoints/last/pretrained_model --corrected
+python -m h2f.residual outputs/train/bc/checkpoints/last/pretrained_model
+python -m h2f.otql outputs/train/bc/checkpoints/last/pretrained_model --corrected --advantage td
 
 # cup stacking
 python -m h2f.cups_perception && python -m h2f.cups_retarget
