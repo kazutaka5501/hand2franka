@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "franka_sharpa"
+version = "0.1.0"
+description = "Franka Panda + Sharpa Wave hand: nut pick-up, reorientation and screwing with RL in Isaac Lab, distilled into SmolVLA"
+requires-python = "==3.11.*"
+
+[tool.setuptools.packages.find]
+include = ["franka_sharpa*"]

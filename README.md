@@ -68,6 +68,12 @@ colour and a cup-shaped model is fitted to their outline. All 10 clips replay co
 simulation. SmolVLA trained on them stacks both cups in 27 % of trials: a cup fits into another
 with 7 mm to spare, and 10 demonstrations do not make the policy that precise.
 
+## Second task: nut assembly with a dexterous hand
+
+[`nut_assembly/`](nut_assembly/README.md): a 3D-printed nut and bolt, a Franka arm with a Sharpa Wave hand, RL in
+Isaac Lab after SimToolReal and Play2Perfect, goals and hand motion from an RGB phone video, SmolVLA distilled from the
+RL policies. Picking the nut up and turning it to a goal orientation work; screwing it on does not yet.
+
 ## What did not work
 
 - **RL post-training.** I tried to improve the 50-clip policy with its own experience in
