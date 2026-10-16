@@ -10,6 +10,14 @@ videos into robot demonstrations in simulation and trains SmolVLA on them.
 *Left: one of my clips. Right: SmolVLA, trained only on data made from those clips, doing the task
 in a simulated copy of my table, seen from where the phone stood.*
 
+## New: nut assembly with a dexterous hand
+
+[`nut_assembly/`](nut_assembly/README.md): a 3D-printed nut and bolt, a Franka arm with a Sharpa Wave hand, RL in
+Isaac Lab after SimToolReal and Play2Perfect, goals and hand motion from an RGB phone video, SmolVLA distilled from the
+RL policies. Picking the nut up and turning it to a goal orientation work; screwing it on does not yet.
+
+![nut pick-up with the Franka + Sharpa hand (RL)](nut_assembly/media/lift.gif)
+
 ## Result
 
 SmolVLA is fine-tuned on the simulated replays of my clips, then tested in simulation on cube
@@ -67,12 +75,6 @@ A second set of 10 clips: a green cup into a blue one, then a pink one on top
 colour and a cup-shaped model is fitted to their outline. All 10 clips replay correctly in
 simulation. SmolVLA trained on them stacks both cups in 27 % of trials: a cup fits into another
 with 7 mm to spare, and 10 demonstrations do not make the policy that precise.
-
-## Second task: nut assembly with a dexterous hand
-
-[`nut_assembly/`](nut_assembly/README.md): a 3D-printed nut and bolt, a Franka arm with a Sharpa Wave hand, RL in
-Isaac Lab after SimToolReal and Play2Perfect, goals and hand motion from an RGB phone video, SmolVLA distilled from the
-RL policies. Picking the nut up and turning it to a goal orientation work; screwing it on does not yet.
 
 ## What did not work
 
