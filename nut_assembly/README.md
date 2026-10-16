@@ -148,6 +148,7 @@ table the nut is about 10 px wide.
 | RL teacher (sees the state) | 66 % | 96 % |
 | SmolVLA, teacher data, overview + palm camera (380 episodes) | 0 % | 0 % |
 | SmolVLA, teacher data, overview camera only (380 episodes) | 0 % | 0 % |
+| SmolVLA, two cameras, + one DAgger round (63 student rollouts labelled by the teacher, [`dagger_rollout.py`](scripts/dagger_rollout.py)) | 0 % | 0 % |
 | SmolVLA, teacher data + my 19 retargeted clips, overview + palm camera (399 episodes) | 0 % | 0 % |
 | SmolVLA, my 19 retargeted clips only, overview + palm camera | 0 % | 0 % |
 
