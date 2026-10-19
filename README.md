@@ -14,7 +14,8 @@ in a simulated copy of my table, seen from where the phone stood.*
 
 [`nut_assembly/`](nut_assembly/README.md): a 3D-printed nut and bolt, a Franka arm with a Sharpa Wave hand, RL in
 Isaac Lab after SimToolReal and Play2Perfect, goals and hand motion from an RGB phone video, SmolVLA distilled from the
-RL policies. Picking the nut up and turning it to a goal orientation work; screwing it on does not yet.
+RL policies. With the hand, picking the nut up and turning it to a goal orientation work, screwing it on does not
+yet; with the Franka's parallel gripper, RL threads the nut onto the bolt in 128 of 128 episodes.
 
 ![nut pick-up with the Franka + Sharpa hand (RL)](nut_assembly/media/lift.gif)
 
