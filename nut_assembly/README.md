@@ -24,9 +24,13 @@ on screwing with goals a quarter turn apart.
   and to turn it to a goal orientation (66 % of goals within 3 cm and 30°). The thread works in simulation: turning the
   nut screws it down one pitch per turn. From the RGB phone video alone I get the camera calibration, the nut's 6D
   trajectory and my hand's motion retargeted onto the robot.
-- **What did not.** Screwing was not learned in the time I had: each reward I tried was first exploited (pushing the
-  nut down through the thread, knocking it off the bolt). SmolVLA trained from the RL teacher (and from my retargeted
-  hand motion) does not grasp the nut, with one camera or two.
+- **With a parallel gripper instead of the hand**, the same nut and bolt: RL threads the nut onto the bolt in 128 of 128
+  episodes (Factory's criterion: the thread has caught, about half a turn), and picks it up and brings it to a goal in
+  19 %.
+- **What did not.** Screwing with the dexterous hand: each reward I tried was first exploited (pushing the nut down
+  through the thread, knocking it off the bolt); with the arm's force capped below what the thread holds, the policy
+  no longer cheats but does not turn the nut either. SmolVLA students trained from the RL teacher pick the nut up in
+  5–9 % of episodes (teacher: 96 %), the best after four rounds of DAgger.
 
 | picking up (RL, 93 %) | turning to a goal orientation (RL) |
 |---|---|
@@ -119,8 +123,21 @@ each ([`screw.py`](franka_sharpa/tasks/nut_lift/screw.py)), continued from the s
 Episodes reaching the time limit fell from 33 % to 4 % within 30 minutes in the third run: knocking the nut off the
 bolt ends the episode, and with it the penalty. Each fix closed one shortcut, but the root cause is physical: the
 Franka can press the nut through the SDF thread contact, so pressing is easier than turning. The stage-1 policy, which
-never trained on the bolt, does the same when given the screwing waypoints (26 mm down, 0.06 turns). The next step is
-on the simulation side — cap the force the arm can apply, stiffen the thread contact — before any reward shaping.
+never trained on the bolt, does the same when given the screwing waypoints (26 mm down, 0.06 turns).
+
+**How hard can the nut be pushed before the thread gives way?** A constant downward force on the nut resting on the
+tip, no torque, 3 s ([`test_thread_push.py`](scripts/test_thread_push.py)):
+
+| radial clearance | ≤ 20 N | 50 N | 100 N | 200 N |
+|---|---|---|---|---|
+| 0.5 mm | holds | holds | holds | 13.6 mm down |
+| **1.0 mm** | holds | holds | holds | 11.9 mm down |
+| 1.5 mm | holds | 5.3 mm down | 11.2 mm down | 11.6 mm down |
+
+The thread holds up to 100 N; the Franka (87 Nm joints) presses far harder. A looser thread would make it worse. With
+the arm's joint torques capped (20 Nm for joints 1–4, 6 Nm for 5–7; the arm carries no gravity in this simulation) and
+1500 more iterations from the stage-1 policy: the nut no longer goes down without turning (0 mm), but it does not turn
+either (0.00 turns), so the hand still has to discover turning on its own.
 
 ## SmolVLA from the RL teacher
 
@@ -141,24 +158,65 @@ the student alone in Isaac ([`eval_vla_closed_loop.py`](scripts/eval_vla_closed_
 The students move the hand towards the goal marker but do not close it on the nut: in a 256 px view from across the
 table the nut is about 10 px wide.
 
-**Two cameras (overview + palm), stage-1 task (position and orientation goals), 470 teacher episodes:**
+**Two cameras (overview + palm), stage-1 task (position and orientation goals), 380 teacher episodes:**
 
 | policy | goals reached (3 cm, 30°) | lifted and held |
 |---|---|---|
 | RL teacher (sees the state) | 66 % | 96 % |
-| SmolVLA, teacher data, overview + palm camera (380 episodes) | 0 % | 0 % |
-| SmolVLA, teacher data, overview camera only (380 episodes) | 0 % | 0 % |
-| SmolVLA, two cameras, + one DAgger round (63 student rollouts labelled by the teacher, [`dagger_rollout.py`](scripts/dagger_rollout.py)) | 0 % | 0 % |
-| SmolVLA, teacher data + my 19 retargeted clips, overview + palm camera (399 episodes) | 0 % | 0 % |
-| SmolVLA, my 19 retargeted clips only, overview + palm camera | 0 % | 0 % |
+| SmolVLA, teacher data, overview + palm camera | 0 % | **4.7 %** |
+| SmolVLA, teacher data, overview camera only | 0 % | 0 %\* |
+| SmolVLA, teacher data + my 19 retargeted clips, overview + palm camera (399 episodes) | 0 % | 0 %\* |
+| SmolVLA, my 19 retargeted clips only, overview + palm camera | 0 % | 0 %\* |
+
+**Correction.** The closed-loop evaluation first clipped the student's actions to ±1 (in units of the action scale),
+while the teacher's are not clipped: 60 % of the teacher's actions exceed 1, up to 22. Without the clip, the
+two-camera student lifts the nut in 4.7 % instead of 0 %. Rows marked \* (and the one-camera table above) were
+measured with the clip and not re-run.
+
+**DAgger** ([`dagger_loop.sh`](scripts/dagger_loop.sh), [`dagger_rollout.py`](scripts/dagger_rollout.py)): each round
+the current student drives 128 episodes (the teacher's action is executed instead with probability β), the RL teacher
+labels every state the student visits, all data so far is merged, the student is fine-tuned, then evaluated alone
+(64 episodes):
+
+| round | β | data | student alone: lifted and held | goals reached |
+|---|---|---|---|---|
+| 0 | – | 380 episodes | 4.7 % | 0 % |
+| 1 | 0.5 | 507 | 4.7 % | 0 % |
+| 2 | 0.3 | 634 | 6.2 % | 0 % |
+| 3 | 0.15 | 761 | 7.8 % | 0 % |
+| 4 | 0 | 888 | **9.4 %** | 0 % |
+
+Every round helps a little; the student is still far from the teacher.
 
 ![SmolVLA (teacher + human data, two cameras) in closed loop](media/smolvla_2cam.gif)
 
-In closed loop the students reach towards the goal marker without picking the nut up; offline, on held-out teacher
+In closed loop most students reach towards the goal marker without picking the nut up; offline, on held-out teacher
 episodes, the one-camera student's hand actions are twice as close to the teacher's as "keep still" (0.32 vs 0.66 rad
-mean error), its arm actions no better (0.16 vs 0.16). Imitation from a few hundred demonstrations does not survive
-its own small errors here; the standard remedy, DAgger (the teacher labels the states the student actually reaches),
-is the next step.
+mean error), its arm actions no better (0.16 vs 0.16). Imitating a 29-joint policy from a few hundred demonstrations
+does not survive its own small errors; DAgger closes the gap only slowly.
+
+## The same nut with a parallel gripper
+
+To separate "the task is hard" from "the hand is hard", the same nut and bolt with the Franka's own parallel gripper
+([`gripper_nut/`](franka_sharpa/tasks/gripper_nut)):
+
+| task | based on | result |
+|---|---|---|
+| pick the nut up from the table (flat or on its side), bring it to a goal | Isaac Lab's Franka lift task | 18.9 % within 5 cm of the goal (512 episodes, median error 79 mm) |
+| thread the nut onto the bolt, starting held above the bolt | Isaac Lab's Factory NutThread, with M38 parts | **128 / 128** |
+
+| gripper: threading (RL) | gripper: picking up (RL) |
+|---|---|
+| ![gripper threading](media/gripper_thread.gif) | ![gripper lift](media/gripper_lift.gif) |
+
+The threading success is Factory's criterion: the nut is centred on the bolt and has gone down past a fraction of a
+pitch below where the thread catches. Measured from the poses: the nut starts 14–24 mm above the bolt tip, is lowered
+onto it, turned 0.43 turns clockwise (about 155°, the most Factory's controller turns in a 30 s episode) and ends
+7.3–7.8 mm below the tip — seated on the tip's chamfer and 2.6 mm (0.43 × 6 mm) along the thread. So the gripper
+policy really screws the nut on, but only starts it: tightening it fully would take several more turns with regrasps.
+Factory's own yaw window for the bolt (120–150°) never let the thread catch with this nut's countersink; the window
+was moved to where a geometric model of the seat says the thread catches (299–329°), and a scripted turn then threaded
+30 of 32 nuts before training.
 
 The training sets are on the Hugging Face Hub as LeRobot datasets:
 [Kaz55/nut_rl_distill_2cam](https://huggingface.co/datasets/Kaz55/nut_rl_distill_2cam) (380 teacher episodes),
@@ -173,13 +231,16 @@ The training sets are on the Hugging Face Hub as LeRobot datasets:
   ended by the joint-velocity safety stop).
 - Screwing: see stage 2. Pushing through the thread and knocking the nut off were both found from the logs (turns vs.
   descent, episode endings), not from the reward curve, which looked good in both cases.
-- SmolVLA: no grasp from any of the training sets above, with one camera or two.
+- SmolVLA from the hand teacher: 4.7 % lifted, 9.4 % after four DAgger rounds; no 6D goal reached.
+- Screwing with the hand under a force cap: no cheating, but no turning.
 
 ## Next
 
-- Screwing: fix the contact physics first (force limit on the arm, stiffer thread contact), then the reward.
-- SmolVLA: DAgger with the RL teacher; then, once a screwing teacher exists, a language-conditioned student that
-  repeats "turn the nut a little" until it is tight, with the goals still taken from the phone video.
+- Hand screwing: keep the force cap and start from the nut already held (as Factory does for the gripper), so turning
+  is the only thing left to learn.
+- SmolVLA: distil the gripper policies first (8 joints instead of 29, closer to SmolVLA's pre-training); more DAgger
+  rounds for the hand; then, once a screwing teacher exists, a language-conditioned student that repeats "turn the nut
+  a little" until it is tight, with the goals still taken from the phone video.
 
 ## Run it
 
@@ -191,6 +252,10 @@ python scripts/train.py --task Franka-Sharpa-Nut-Play-v0 --headless --resume --l
 python scripts/train.py --task Franka-Sharpa-Nut-Screw-v0 --headless --resume --load_run <run> --checkpoint <ckpt> # stage 2
 python scripts/evaluate.py / evaluate_screw.py ...                           # metrics + trajectories for the videos
 ```
+
+Gripper: `python scripts/train.py --task Franka-Gripper-Nut-Lift-v0 --headless` and
+`python scripts/train_rl_games.py --task Franka-Gripper-Nut-Thread-v0 --headless`, evaluated with `evaluate_gripper.py`.
+DAgger: `scripts/dagger_loop.sh <student checkpoint> 4`. Thread push test: `test_thread_push.py`.
 
 Video side: `detect_markers.py` → `track_nut.py` → `retarget_mano.py` → `build_human_dataset.py`;
 teacher side: `evaluate.py` (record) → `build_distill_dataset.py` → `lerobot-train` → `eval_vla_closed_loop.py`.

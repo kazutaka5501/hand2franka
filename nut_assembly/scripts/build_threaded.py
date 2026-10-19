@@ -87,13 +87,21 @@ def Xform "{root}"{meta}
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--clearance", type=float, default=None, help="Radial thread clearance [m] (default: thread_geometry).")
+    parser.add_argument("--suffix", type=str, default="", help="Appended to the file names, e.g. _c15.")
+    args = parser.parse_args()
+    if args.clearance is not None:
+        tg.CLEARANCE = args.clearance
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     vertices, faces = tg.nut_mesh()
     body = _material("Nut") + _mesh(
         "collision", vertices, faces, SDF_SCHEMAS, SDF_ATTRIBUTES + _color((0.05, 0.05, 0.05)), "/Nut/PhysicsMaterial"
     )
-    (OUT_DIR / "nut_threaded.usda").write_text(
+    (OUT_DIR / f"nut_threaded{args.suffix}.usda").write_text(
         _file("Nut", body, ("PhysicsRigidBodyAPI", "PhysicsMassAPI"), f"    float physics:mass = {nut_geometry.MASS}\n")
     )
 
@@ -102,7 +110,7 @@ def main():
     body += _mesh("head", tg.bolt_head_vertices(), tg.bolt_head_faces(), HULL_SCHEMAS,
                   HULL_ATTRIBUTES + _color((0.1, 0.2, 0.8)), "/Bolt/PhysicsMaterial")
     body += _mesh("shank", shank_v, shank_f, SDF_SCHEMAS, SDF_ATTRIBUTES + _color((0.1, 0.2, 0.8)), "/Bolt/PhysicsMaterial")
-    (OUT_DIR / "bolt.usda").write_text(_file("Bolt", body))
+    (OUT_DIR / f"bolt{args.suffix}.usda").write_text(_file("Bolt", body))
 
     print(f"wrote {OUT_DIR}/nut_threaded.usda and bolt.usda: M{tg.MAJOR_DIAMETER * 1e3:.0f}x{tg.PITCH * 1e3:.0f}, "
           f"minor {tg.MINOR_DIAMETER * 1e3:.1f} mm, clearance {tg.CLEARANCE * 1e3:.1f} mm, "

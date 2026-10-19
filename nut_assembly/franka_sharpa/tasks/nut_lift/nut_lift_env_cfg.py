@@ -340,6 +340,12 @@ class NutScrewMixinCfg(NutPlayMixinCfg):
         # fingers pressed into the threads get pushed out at up to max_depenetration_velocity; the robot's 1000 m/s
         # flung the hand and tripped the abnormal-joint-velocity termination in 46 % of the first run's episodes
         self.scene.robot.spawn.rigid_props.max_depenetration_velocity = 5.0
+        # The thread holds the nut up to ~100 N of downward force and gives way at 200 N
+        # (scripts/test_thread_push.py); the Franka's 87 Nm joints press far harder than that, and the stage-2
+        # policies pushed the nut through the thread instead of turning it. Limit the arm so the hand cannot press
+        # past the thread (its links carry no gravity here, so a small torque still moves it and lifts the nut).
+        arm = self.scene.robot.actuators["arm"]
+        self.scene.robot.actuators["arm"] = arm.replace(effort_limit_sim={"panda_joint[1-4]": 20.0, "panda_joint[5-7]": 6.0})
         self.episode_length_s = 10.0
         # bolt fixed on the table, threaded nut
         self.scene.bolt = AssetBaseCfg(

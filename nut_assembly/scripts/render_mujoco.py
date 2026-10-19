@@ -88,13 +88,15 @@ def build_model(ball_radius: float, table_pos, table_size, width: int, height: i
     world = spec.worldbody
     world.add_light(pos=[0.5, -0.5, 2.5], dir=[0.0, 0.2, -1.0], diffuse=[0.8, 0.8, 0.8])
     world.add_light(pos=[1.5, 1.0, 2.0], dir=[-0.5, -0.4, -1.0], diffuse=[0.4, 0.4, 0.4])
-    world.add_geom(type=mujoco.mjtGeom.mjGEOM_PLANE, size=[3.0, 3.0, 0.1], rgba=[0.75, 0.77, 0.8, 1.0])
+    # floor under the table (the gripper tasks put the table top at the robot base, i.e. below z = 0)
+    floor_z = min(0.0, table_pos[2] - 0.5 * table_size[2] - 0.3)
+    world.add_geom(type=mujoco.mjtGeom.mjGEOM_PLANE, size=[3.0, 3.0, 0.1], pos=[0, 0, floor_z], rgba=[0.75, 0.77, 0.8, 1.0])
     world.add_geom(type=mujoco.mjtGeom.mjGEOM_BOX, pos=table_pos, size=0.5 * np.asarray(table_size), rgba=TABLE_RGBA)
     # a pedestal so the table does not appear to float
     world.add_geom(
         type=mujoco.mjtGeom.mjGEOM_BOX,
-        pos=[table_pos[0], table_pos[1], 0.5 * (table_pos[2] - 0.5 * table_size[2])],
-        size=[0.3, 0.5, 0.5 * (table_pos[2] - 0.5 * table_size[2])],
+        pos=[table_pos[0], table_pos[1], 0.5 * (table_pos[2] - 0.5 * table_size[2] + floor_z)],
+        size=[0.3, 0.5, 0.5 * (table_pos[2] - 0.5 * table_size[2] - floor_z)],
         rgba=[0.35, 0.35, 0.38, 1.0],
     )
     ball = world.add_body(name="ball", mocap=True)

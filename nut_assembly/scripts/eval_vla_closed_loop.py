@@ -132,7 +132,8 @@ def main():
                     traj["ball_quat"].append(nut.data.root_quat_w[rec].cpu().numpy())
                     traj["goal_pos_t"].append((goal_w - origins)[rec].cpu().numpy())
                     traj["goal_quat_t"].append(command[rec, 3:7].cpu().numpy())
-                action = ((target - robot.data.joint_pos) / scale).clamp(-1.0, 1.0)
+                # no clipping: the teacher's actions are not clipped either (60 % of them exceed 1, up to 22)
+                action = (target - robot.data.joint_pos) / scale
                 _, _, terminated, truncated, _ = env.step(action)
                 running &= ~(terminated | truncated)
         lifted = (height > args.lift_height) & grasped
